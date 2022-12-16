@@ -182,4 +182,49 @@ export class Parser {
             return String.fromCharCode(parseInt(numStr, 10))
         })
     }
+
+    parseUpdatedManga($ : any, time: Date, ids: string[], source: any) {
+        const updatedManga = [];
+        let loadMore = true;
+        const isLast = !(Boolean($('button:contains(Next)')[0])) //Check if it's the last page or not
+        console.log("is last : "+ isLast)
+
+        if (!$('div.relative.space-x-2', $('.space-y-4 div')).length)
+            throw new Error('Unable to parse valid update section!');
+
+        for (const manga of $('div.relative.space-x-2', $('.space-y-4 div')).toArray()) {
+            const id    = $('div a', manga).attr('href')?.split('/').pop() ?? ''
+            const date_str = $('p.mt-2', manga).first().text().toLowerCase().replace('released', '').trim()
+            const mangaDate = source.convertTime(date_str)
+
+          //Check if manga time is older than the time provided, is this manga has an update. Return this.
+            if (!id)
+                continue;
+            if (mangaDate > time) {
+                console.log("manga> time");
+                if (ids.includes(id)) {
+                    console.log("trouvé un manga a maj");
+                    updatedManga.push(id);
+                }
+           }
+
+            // If the latest mangaDate isn't older than our current time, we're done!
+  
+            else {
+                console.log("arret recherche car manga date < time")
+                loadMore = false;
+            }
+            
+
+        }
+        //If the site does not have any more pages, we're done!
+        if (isLast) {
+            console.log("parse derniere page : STOP")
+            loadMore = false;
+        }
+        return {
+            ids: updatedManga,
+            loadMore,
+        };
+    }
 }

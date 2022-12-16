@@ -15,6 +15,7 @@ import {
     Tag,
     Section,
     SourceStateManager,
+    MangaUpdates,
 } from 'paperback-extensions-common'
 
 import { Parser } from './parser'
@@ -215,6 +216,31 @@ export class ReaperScans extends Source {
         const rowtype = await getRowBool(this.stateManager)
 
         this.parser.parseHomeSections($, rowtype, sectionCallback)
+    }
+
+    override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+        let page = 1;
+        let updatedManga = {
+            ids: new Array(),
+            loadMore: true
+        };
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${this.baseUrl}/latest/comics?page=${page++}/`,
+                method: 'GET'
+            });
+            const response = await this.requestManager.schedule(request, this.RETRY);
+            this.CloudFlareError(response.status)
+            const $ = this.cheerio.load(response.data);
+            
+            updatedManga = this.parser.parseUpdatedManga($, time, ids, this);
+            
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 
     /**
