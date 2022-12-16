@@ -71,7 +71,7 @@ export class FlameScans extends Source {
     RETRY = 5
     parser = new Parser()
 
-    getMangaShareUrl(mangaId: string): string {
+    override getMangaShareUrl(mangaId: string): string {
         return `${this.baseUrl}/series/${mangaId}`
     }
 
