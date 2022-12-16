@@ -102,7 +102,7 @@ export class Parser {
         const results: MangaTile[] = []
 
         for (const item of $('.listupd .bsx').toArray()) {
-            const id    = $('a', item).attr('href')?.split("series")[1].replace(/^\/|\/$/g, '') ?? ''
+            const id    = this.getMangaId($,item)
             const title = $('a', item).attr('title') ?? ''
             const image = $('img', item).attr('src') ?? ''
             results.push(
@@ -119,7 +119,7 @@ export class Parser {
     parseViewMore($: any): MangaTile[] {
         const more: MangaTile[] = []
         for (const item of $('.listupd .bsx').toArray()) {
-            const id    = $('a', item).attr('href')?.split("series")[1].replace(/^\/|\/$/g, '') ?? ''
+            const id    = this.getMangaId($,item)
             const title = $('a', item).attr('title') ?? ''
             const image = $('img', item).attr('src') ?? ''
             more.push(
@@ -147,7 +147,7 @@ export class Parser {
         const arrLatest   = $('.latest-updates .bsx').toArray()
 
         for (const obj of arrFeatured) {
-            const id     = $(obj).attr('href')?.split("series")[1].replace(/^\/|\/$/g, '') ?? ''
+            const id     = this.getMangaId($,null)
             console.log(id)
             const title  = $('.tt', obj).text().trim()
             const strImg = $('.bigbanner', obj).attr('style') ?? ''
@@ -165,7 +165,7 @@ export class Parser {
 
 
         for (const item of arrLatest) {
-            const id    = $('a', item).attr('href')?.split("series")[1].replace(/^\/|\/$/g, '') ?? ''
+            const id    = this.getMangaId($,item)
             const title = $('a', item).attr('title') ?? ''
             const image = $('img', item).attr('src') ?? ''
             latest.push(
@@ -181,7 +181,7 @@ export class Parser {
         sectionCallback(section2)
 
         for (const obj of arrPopular) {
-            const id      = $('a', obj).attr('href')?.split("series")[1].replace(/^\/|\/$/g, '') ?? ''
+            const id      = this.getMangaId($,obj)
             const title   = $('a', obj).attr('title') ?? ''
             const subText = $('.status', obj).text() ?? ''
             const image   = $('img', obj).attr('src') ?? ''
@@ -203,5 +203,16 @@ export class Parser {
             var num = parseInt(numStr, 10)
             return String.fromCharCode(num)
         })
+    }
+
+    getMangaId($: any, item: string | null){
+        const patternRemoveSlashes = /^\/|\/$/g
+        const patternRemoveNumbers = /^[0-9]+\-/g
+        if (item === null) {
+            return $('a').attr('href')?.split("series")[1].replace(patternRemoveSlashes, '').replace(patternRemoveNumbers,'') ?? ''
+        }
+        else {
+            return $('a', item).attr('href')?.split("series")[1].replace(patternRemoveSlashes, '').replace(patternRemoveNumbers,'') ?? ''
+        }
     }
 }
