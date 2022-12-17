@@ -187,7 +187,6 @@ export class Parser {
         const updatedManga = [];
         let loadMore = true;
         const isLast = !(Boolean($('button:contains(Next)')[0])) //Check if it's the last page or not
-        console.log("is last : "+ isLast)
 
         if (!$('div.relative.space-x-2', $('.space-y-4 div')).length)
             throw new Error('Unable to parse valid update section!');
@@ -201,9 +200,7 @@ export class Parser {
             if (!id)
                 continue;
             if (mangaDate > time) {
-                console.log("manga> time");
                 if (ids.includes(id)) {
-                    console.log("trouvé un manga a maj");
                     updatedManga.push(id);
                 }
            }
@@ -211,7 +208,6 @@ export class Parser {
             // If the latest mangaDate isn't older than our current time, we're done!
   
             else {
-                console.log("arret recherche car manga date < time")
                 loadMore = false;
             }
             
@@ -219,7 +215,6 @@ export class Parser {
         }
         //If the site does not have any more pages, we're done!
         if (isLast) {
-            console.log("parse derniere page : STOP")
             loadMore = false;
         }
         return {

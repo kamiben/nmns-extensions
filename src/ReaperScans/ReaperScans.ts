@@ -40,6 +40,10 @@ export const ReaperScansInfo: SourceInfo = {
         {
             text: 'English',
             type: TagType.GREY,
+        },       
+        {
+            text: 'Notifications',
+            type: TagType.GREEN
         },
         {
             text: 'Cloudflare',
