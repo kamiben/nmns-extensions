@@ -13,6 +13,7 @@ import {
     SourceInfo,
     TagType,
     RequestManagerInfo,
+    MangaUpdates,
 } from 'paperback-extensions-common'
 
 import { Parser } from './parser'
@@ -34,6 +35,10 @@ export const FlameScansInfo: SourceInfo = {
             type: TagType.GREY,
         },
         {
+            text: 'Notifications',
+            type: TagType.GREEN
+        },
+        {
             text: 'Cloudflare',
             type: TagType.RED
         },
@@ -44,6 +49,7 @@ const userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 
 export class FlameScans extends Source {
     baseUrl = FS_DOMAIN
+    sourceTraversalPathName = 'abc'
     requestManager = createRequestManager({
         requestsPerSecond: 3,
         requestTimeout: 8000,
@@ -77,7 +83,7 @@ export class FlameScans extends Source {
 
     async getMangaDetails(mangaId: string): Promise<Manga> {
         const request = createRequestObject({
-            url: `${this.baseUrl}/series/${mangaId}`,
+            url: `${this.baseUrl}/${this.sourceTraversalPathName}/series/${mangaId}`,
             method: 'GET',
         })
         const response = await this.requestManager.schedule(request, this.RETRY)
@@ -88,7 +94,7 @@ export class FlameScans extends Source {
 
     async getChapters(mangaId: string): Promise<Chapter[]> {
         const request = createRequestObject({
-            url: `${this.baseUrl}/abc/series/${mangaId}`,
+            url: `${this.baseUrl}/${this.sourceTraversalPathName}/series/${mangaId}`,
             method: 'GET',
         })
 
@@ -137,6 +143,9 @@ export class FlameScans extends Source {
     }
 
     override async getHomePageSections(sectionCallback: (section: HomeSection) => void): Promise<void> {
+        const getTraversalPathName = await this.getTraversalPathName();
+        this.sourceTraversalPathName = getTraversalPathName;
+
         const request = createRequestObject({
             url: `${this.baseUrl}`,
             method: 'GET',
@@ -146,6 +155,43 @@ export class FlameScans extends Source {
         const $ = this.cheerio.load(response.data ?? response['fixedData'])
 
         this.parser.parseHomeSections($, sectionCallback)
+    }
+
+    async getTraversalPathName() {
+        const request = createRequestObject({
+            url: `${this.baseUrl}`,
+            method: 'GET',
+        });
+        const data = await this.requestManager.schedule(request, this.RETRY);
+        this.CloudFlareError(data.status);
+        const $ = this.cheerio.load(data.data);
+        const path = $('.flame-logo .logo a').attr('href')?.replace(`${this.baseUrl}/`, '').replace(/\/+$/, '') ?? '';
+        return path;
+    }
+
+
+    override async filterUpdatedManga(mangaUpdatesFoundCallback: (updates: MangaUpdates) => void, time: Date, ids: string[]): Promise<void> {
+        let updatedManga = {
+            ids: new Array(),
+            loadMore: true
+        };
+        while (updatedManga.loadMore) {
+            const request = createRequestObject({
+                url: `${this.baseUrl}`,
+                method: 'GET'
+            });
+            const response = await this.requestManager.schedule(request, this.RETRY);
+            this.CloudFlareError(response.status)
+            const $ = this.cheerio.load(response.data);
+            
+            updatedManga = this.parser.parseUpdatedManga($, time, ids, this);
+            
+            if (updatedManga.ids.length > 0) {
+                mangaUpdatesFoundCallback(createMangaUpdates({
+                    ids: updatedManga.ids
+                }));
+            }
+        }
     }
 
     override async getViewMoreItems(homepageSectionId: string, metadata: any): Promise<PagedResults> {

@@ -61,8 +61,9 @@ export class Parser {
     parseChapters($: any, mangaId: string, source: any): Chapter[] {
         const chapters: Chapter[] = []
         const arrChapters = $('#chapterlist li').toArray().reverse()
+        const patternRemoveNumbers = /\/[0-9]+\-/g
         for (const item of arrChapters) {
-            const id = $('a', item).attr('href') ?? ''
+            const id = $('a', item).attr('href').replace(patternRemoveNumbers,'/') ?? ''
             const chapNum = Number($(item).attr('data-num') ?? '0')
 
             const time = source.convertTime($('.chapterdate', item).text().trim())
@@ -147,7 +148,7 @@ export class Parser {
         const arrLatest   = $('.latest-updates .bsx').toArray()
 
         for (const obj of arrFeatured) {
-            const id     = this.getMangaId($,null)
+            const id     = this.getMangaId($,obj)
             console.log(id)
             const title  = $('.tt', obj).text().trim()
             const strImg = $('.bigbanner', obj).attr('style') ?? ''
@@ -214,5 +215,39 @@ export class Parser {
         else {
             return $('a', item).attr('href')?.split("series")[1].replace(patternRemoveSlashes, '').replace(patternRemoveNumbers,'') ?? ''
         }
+    }
+
+    parseUpdatedManga($ : any, time: Date, ids: string[], source: any) {
+        const updatedManga = [];
+        // we only parse the frontpage as the latest source, so no continue (the 'lastest' page does not contain release date)
+        let loadMore = false;
+        console.log("IDs : "+ids)
+        if (!$('.latest-updates .bsx').toArray().length)
+            throw new Error('Unable to parse valid update section!');
+
+        for (const manga of $('.latest-updates .bsx').toArray()) {
+            const id    = this.getMangaId($,manga) ?? ''
+            const mangaDate = source.convertTime($('.epxdate', manga).text().trim())
+
+          //Check if manga time is older than the time provided, is this manga has an update. Return this.
+            if (!id)
+                continue;
+            if (mangaDate > time) {
+                console.log("manga> time");
+                if (ids.includes(id)) {
+                    console.log(id+" trouvé un manga a maj");
+                    updatedManga.push(id);
+                }
+                else {console.log(id+" manga pas dans la liste");}
+           }
+           else {
+            console.log(id+"mangadate < time manga:"+mangaDate+" time : "+time);
+           }
+        }
+
+        return {
+            ids: updatedManga,
+            loadMore,
+        };
     }
 }
